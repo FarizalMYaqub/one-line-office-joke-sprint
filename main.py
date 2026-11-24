@@ -13,7 +13,7 @@ OUTPUT_PATH = os.environ.get("ENTRY_OUTPUT", "/output/entry.txt")
 CHAR_LIMIT = 200
 
 
-def check(joke):
+def validate(joke):
     """The gate only accepts UTF-8 text of 1 to 200 chars, not only whitespace,
     and the brief wants a single line: no newline may sneak in."""
     if not joke.strip():
@@ -26,12 +26,23 @@ def check(joke):
     return joke
 
 
-def main():
-    joke = check(JOKE)
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as handle:
+def write_entry(joke, path):
+    """Write the validated joke to path atomically, so a reader never sees
+    a half-written entry: write a temp file beside it, then replace."""
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    tmp_path = path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as handle:
         handle.write(joke)
-    print(f"Wrote {len(joke)} chars to {OUTPUT_PATH}")
+    os.replace(tmp_path, path)
+    return len(joke)
+
+
+def main():
+    joke = validate(JOKE)
+    count = write_entry(joke, OUTPUT_PATH)
+    print(f"Wrote {count} chars to {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
